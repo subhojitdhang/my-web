@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEM-2 EXAM PORTAL</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text: #f8fafc;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 95vw; height: 53.43vw; 
+            max-width: 1200px; max-height: 675px;
+            background: var(--panel);
+            border-radius: 12px; position: relative;
+            overflow: hidden; display: flex;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .screen {
+            position: absolute; inset: 0; padding: 30px;
+            display: flex; flex-direction: column; align-items: center;
+            transition: 0.3s;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px; background: rgba(0,0,0,0.4);
+            border-right: 1px solid #334155;
+            display: flex; flex-direction: column; padding: 20px;
+        }
+
+        .nav-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 8px; margin-top: 15px; overflow-y: auto; padding-right: 5px;
+        }
+
+        .nav-item {
+            aspect-ratio: 1; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; cursor: pointer;
+            background: var(--danger); color: white;
+            transition: 0.2s;
+        }
+
+        .nav-item.answered { background: var(--success); }
+        .nav-item.current { outline: 3px solid var(--accent); outline-offset: -2px; transform: scale(1.05); }
+
+        /* Main Content */
+        .main-content { flex: 1; padding: 40px; display: flex; flex-direction: column; position: relative; }
+        
+        .exam-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #475569; padding-bottom: 15px; margin-bottom: 25px;
+        }
+
+        .option-box {
+            background: rgba(255,255,255,0.05); padding: 14px 20px;
+            margin: 10px 0; border-radius: 8px; border: 1px solid #334155;
+            cursor: pointer; transition: 0.2s; font-size: 16px;
+        }
+        .option-box:hover { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); }
+        .option-box.selected { background: var(--accent); color: #000; font-weight: bold; border-color: white; }
+
+        .btn {
+            padding: 12px 30px; border-radius: 6px; border: none;
+            background: var(--accent); color: #0f172a; font-weight: bold;
+            cursor: pointer; font-size: 15px; transition: 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-red { background: var(--danger); color: white; }
+        .btn-gray { background: #475569; color: white; }
+        
+        .copyright {
+            position: absolute; bottom: 15px; right: 25px;
+            font-size: 11px; color: #64748b; font-weight: bold;
+        }
+
+        input {
+            padding: 15px; border-radius: 8px; border: 1px solid #475569;
+            background: #0f172a; color: white; font-size: 16px; width: 100%; box-sizing: border-box;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: var(--accent); background: #0f172a; position: sticky; top: 0; }
+
+        #timer { font-family: 'Courier New', Courier, monospace; font-size: 28px; color: var(--danger); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="scr-gate" class="screen">
+        <h1 style="color:var(--accent); font-size: 42px; margin-bottom: 10px;">SEM-2 EXAM PORTAL</h1>
+        <p style="color: #64748b; margin-bottom: 40px;">Authorized Access Only</p>
+        <div style="width: 350px;">
+            <input type="password" id="gate-pass" placeholder="System Password">
+            <button class="btn" style="width:100%; margin-top:20px;" onclick="systemLogin()">Enter Portal</button>
+        </div>
+        <div class="copyright">© SUBHO</div>
+    </div>
+
+    <div id="scr-reg" class="screen hidden">
+        <h1 style="color:var(--accent)">Student Registration</h1>
+        <div style="margin-top: 30px; width: 400px;">
+            <input type="text" id="stu-name" placeholder="Student Full Name" style="margin-bottom:15px;">
+            <input type="text" id="stu-roll" placeholder="Roll Number" style="margin-bottom:25px;">
+            <button class="btn" style="width:100%" onclick="startExam()">Start Examination</button>
+            <button class="btn btn-gray" style="width:100%; margin-top:15px;" onclick="openAdmin()">Admin Dashboard</button>
+        </div>
+        <div class="copyright">© SUBHO</div>
+    </div>
+
+    <div id="scr-exam" class="hidden" style="display:flex; width:100%; height:100%;">
+        <div class="sidebar">
+            <h3 style="text-align:center; color:var(--accent); margin-bottom: 15px;">NAVIGATOR</h3>
+            <div class="nav-grid" id="nav-grid"></div>
+            <button class="btn btn-red" style="margin-top:auto;" onclick="forceSubmit()">Finish Exam</button>
+        </div>
+        <div class="main-content">
+            <div class="exam-header">
+                <div id="disp-info" style="font-weight: bold; font-size: 14px;"></div>
+                <div id="timer">20:00</div>
+            </div>
+            <div id="q-container" style="flex:1;">
+                <h2 id="q-text" style="line-height: 1.4; margin-bottom: 25px;"></h2>
+                <div id="options-list"></div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:20px; justify-content:center;">
+                <button class="btn btn-gray" onclick="navQ(-1)">PREVIOUS</button>
+                <button class="btn" id="btn-next" onclick="navQ(1)">NEXT QUESTION</button>
+            </div>
+            <div class="copyright">© SUBHO</div>
+        </div>
+    </div>
+
+    <div id="scr-admin" class="screen hidden">
+        <h1 style="color:var(--accent)">Admin Control Panel</h1>
+        
+        <div style="width:100%; height:280px; background:#020617; overflow-y:auto; border-radius:8px; border:1px solid #334155; margin-bottom: 20px;">
+            <table>
+                <thead><tr><th>Name</th><th>Roll</th><th>Score</th><th>Status</th></tr></thead>
+                <tbody id="log-body"></tbody>
+            </table>
+        </div>
+
+        <div style="background: rgba(56, 189, 248, 0.05); padding: 20px; border-radius: 8px; width: 100%; max-width: 500px; border: 1px solid #334155;">
+            <h3 style="margin-top:0; color:var(--accent); font-size: 16px;">Change System Password</h3>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="new-sys-pass" placeholder="New Password" style="padding: 10px;">
+                <button class="btn" onclick="updatePassword()">Update</button>
+            </div>
+        </div>
+
+        <div style="margin-top:25px; display:flex; gap:15px;">
+            <button class="btn btn-gray" onclick="location.reload()">Return Home</button>
+            <button class="btn btn-red" onclick="clearLogs()">Clear All Data</button>
+        </div>
+        <div class="copyright">© SUBHO</div>
+    </div>
+</div>
+
+<script>
+// BACKUP CODES AS REQUESTED
+const MASTER_BACKUP = ["998877", "SUPERADMIN", "SUBHOADMIN"];
+
+// FULL DATABASE EXTRACTED FROM PDF [cite: 3, 9, 15, 20, 28, 33, 40, 44, 48, 59, 66, 71, 77, 88, 92, 99, 113, 118, 122, 135, 141, 148, 161, 171, 178, 182, 190, 194, 204, 210, 219, 222, 225, 229, 240, 249, 254, 260, 280, 286, 300, 306, 322, 328, 336, 339, 370, 375, 432, 449, 460, 468, 497, 521, 533, 542, 554, 562, 575, 579, 588, 605, 626, 633, 647, 654, 663, 674, 697, 708, 711, 719]
+const FULL_DB = [
+    {q:"The full form of CSS is:", a:["Cascading Style Sheets","Coloured Special Sheets","Color and Style Sheets","None of these"], c:0},
+    {q:"How can we change the background color of an element?", a:["background-color","color","Both a and b","None of the above"], c:0},
+    {q:"How can we change the text color of an element?", a:["background-color","color","Both a and b","None of the above"], c:1},
+    {q:"In how many ways can CSS be written in?", a:["1","2","3","4"], c:2},
+    {q:"What type of CSS is generally recommended for designing large web pages?", a:["Inline","Internal","External","None of the above"], c:2},
+    {q:"What is the meaning of 'vlink' in HTML?", a:["Vertical link","Active link","Virtual link","Visited link"], c:3},
+    {q:"Which attribute in Anchor tag is used to show the hyperlink?", a:["HREF","SRC","LINK","HYPERLINK"], c:0},
+    {q:"HTML is the language used to create:", a:["High level programs","Machine language","Web pages","Web servers"], c:2},
+    {q:"Which HTML tag is used to declare internal CSS?", a:["<style>","<link>","<script>","<css>"], c:0},
+    {q:"How can we select an element with a specific ID in CSS?", a:[".","#","^","%"], c:1},
+    {q:"How can we select an element with a specific class in CSS?", a:[".","#","%","^"], c:0},
+    {q:"How can we write comments in CSS?", a:["/**/","//","#","All of the above"], c:0},
+    {q:"Which are valid ways to represent a color in CSS?", a:["Color name","RGB values","HEX values","All of the above"], c:3},
+    {q:"Setting an inline-block in CSS requires which property?", a:["display","color","block","None"], c:0},
+    {q:"Which property is used to align text in CSS?", a:["text","text-alignment","text-align","text-position"], c:2},
+    {q:"The CSS property used to control font-size is:", a:["text-style","text-size","font-size","None"], c:2},
+    {q:"How to display hyperlinks without underline?", a:["a{text-decoration:none;}","a{decoration:none;}","a{text:none;}","None"], c:0},
+    {q:"Property used to make text bold?", a:["font-weight: bold","weight: bold","font: bold","style: bold"], c:0},
+    {q:"Correct syntax for HTML comment?", a:["","// Comment","# Comment","/* Comment */"], c:0},
+    {q:"Effect of <b> tag?", a:["Bold font","Black color","Change size","None"], c:0},
+    {q:"Smallest header in HTML by default?", a:["h1","h2","h6","h4"], c:2},
+    {q:"Tag used to render an image?", a:["src","image","pic","img"], c:3},
+    {q:"Tag for line-break?", a:["<br>","<a>","<pre>","<b>"], c:0},
+    {q:"Extension of HTML program?", a:[".ht",".html",".hml",".htm"], c:1},
+    {q:"Tag for scrolling text?", a:["<marquee>","<scroll>","<div>","None"], c:0},
+    {q:"Microsoft Access is a:", a:["Network DB","ORDBMS","RDBMS","OODBMS"], c:2},
+    {q:"Max length of text field in Access?", a:["75","120","255","265"], c:2},
+    {q:"Columns in Access are called:", a:["Macro","Fields","Columns","Record"], c:1},
+    {q:"Size of Yes/No field is:", a:["1 bit","1 byte","1 character","1 kb"], c:0},
+    {q:"Uniquely identifies each record?", a:["Field name","Unique key","Primary key","Key record"], c:2},
+    {q:"Save As dialog box key is:", a:["F1","F10","F2","F12"], c:3},
+    {q:"Automatically insert sequential numbers?", a:["Auto Number","Hyperlink","Look up","OLE"], c:0},
+    {q:"Visual Basic developed by?", a:["IBM","Microsoft","Microsystem","Oracle"], c:1},
+    {q:"IDE stands for?", a:["Integrated Dev Env","Integrated Dual Env","Intelligent Dev Env","None"], c:0},
+    {q:"Extension for VB project file?", a:[".frm",".vbp",".cls",".vb"], c:1},
+    {q:"Default datatype for VB is:", a:["Integer","Decimal","Variant","String"], c:2},
+    {q:"MDI stands for:", a:["Multiple Document Interface","Multiple Design","Manipulated","Menu Design"], c:0},
+    {q:"Tick Event is found in:", a:["Form","Button","Textbox","Timer"], c:3},
+    {q:"Method to move focus to control?", a:["Setfocus","Gotfocus","Lostfocus","None"], c:0},
+    {q:"Property to display control to user?", a:["Hide","Show","Visible","Enabled"], c:2},
+    {q:"Cancel Button property belongs to:", a:["Button","Form","Label","Textbox"], c:1},
+    {q:"Variable name limit in VB?", a:["300","355","400","255"], c:3},
+    {q:"Storage size of Byte datatype?", a:["2 byte","4 byte","1 byte","None"], c:2},
+    {q:"VB variable inside procedure is:", a:["Global","Local","External","None"], c:1},
+    {q:"Tag to display power (x²)?", a:["<sub>","<p>","<sup>","None"], c:2},
+    {q:"CSS describes the:", a:["Structure","Skeleton","Layout","None"], c:2},
+    {q:"Which is not an Access object?", a:["Macros","Worksheets","Module","Table"], c:1},
+    {q:"Extension of ActiveX control?", a:[".acx",".vcx",".acv",".ocx"], c:3},
+    {q:"Control for list of choices?", a:["Combo box","Rich text","List box","None"], c:2},
+    {q:"The text property of textbox acts as:", a:["String","Numeric","Variant","Function"], c:0}
+];
+
+let examSet = [], currentIdx = 0, answers = {}, timer;
+let sysPass = localStorage.getItem('sysPass') || 'admin123';
+let examLogs = JSON.parse(localStorage.getItem('examLogs')) || [];
+
+function systemLogin() {
+    const input = document.getElementById('gate-pass').value;
+    if(input === sysPass) {
+        document.getElementById('scr-gate').classList.add('hidden');
+        document.getElementById('scr-reg').classList.remove('hidden');
+    } else alert("Invalid Password!");
+}
+
+function openAdmin() {
+    let code = prompt("Enter Master Admin Code:");
+    if(MASTER_BACKUP.includes(code)) {
+        renderLogs();
+        document.getElementById('scr-reg').classList.add('hidden');
+        document.getElementById('scr-admin').classList.remove('hidden');
+    } else alert("Access Denied!");
+}
+
+function updatePassword() {
+    const newP = document.getElementById('new-sys-pass').value;
+    if(newP) {
+        sysPass = newP;
+        localStorage.setItem('sysPass', newP);
+        alert("System Password updated to: " + newP);
+        document.getElementById('new-sys-pass').value = '';
+    }
+}
+
+function renderLogs() {
+    const data = JSON.parse(localStorage.getItem('examLogs')) || [];
+    document.getElementById('log-body').innerHTML = data.map(l => 
+        `<tr><td>${l.n}</td><td>${l.r}</td><td>${l.s}</td><td style="color:${l.st==='PASS'?'#4ade80':'#f87171'}">${l.st}</td></tr>`
+    ).join('');
+}
+
+function clearLogs() {
+    if(confirm('Permanently delete all student records?')) {
+        localStorage.removeItem('examLogs');
+        renderLogs();
+    }
+}
+
+function startExam() {
+    const name = document.getElementById('stu-name').value;
+    const roll = document.getElementById('stu-roll').value;
+    if(!name || !roll) return alert("Please fill all details!");
+
+    document.getElementById('disp-info').innerText = `STUDENT: ${name.toUpperCase()} | ROLL: ${roll}`;
+    
+    // Pick 50 questions (or all if less than 50)
+    examSet = [...FULL_DB].sort(() => 0.5 - Math.random()).slice(0, 50);
+    
+    const grid = document.getElementById('nav-grid');
+    grid.innerHTML = '';
+    for(let i=0; i < examSet.length; i++) {
+        let d = document.createElement('div');
+        d.className = 'nav-item'; d.id = `nav-${i}`; d.innerText = i+1;
+        d.onclick = () => { currentIdx = i; loadQ(); };
+        grid.appendChild(d);
+    }
+
+    document.getElementById('scr-reg').classList.add('hidden');
+    document.getElementById('scr-exam').classList.remove('hidden');
+    loadQ();
+    startTimer(20 * 60);
+}
+
+function loadQ() {
+    const q = examSet[currentIdx];
+    document.getElementById('q-text').innerText = `${currentIdx + 1}. ${q.q}`;
+    
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('current'));
+    document.getElementById(`nav-${currentIdx}`).classList.add('current');
+
+    const list = document.getElementById('options-list');
+    list.innerHTML = '';
+    q.a.forEach((opt, i) => {
+        let div = document.createElement('div');
+        div.className = `option-box ${answers[currentIdx] === i ? 'selected' : ''}`;
+        div.innerText = `${String.fromCharCode(97+i)}) ${opt}`;
+        div.onclick = () => {
+            answers[currentIdx] = i;
+            document.getElementById(`nav-${currentIdx}`).classList.add('answered');
+            loadQ();
+            if(currentIdx < examSet.length - 1) setTimeout(() => navQ(1), 250);
+        };
+        list.appendChild(div);
+    });
+
+    // Update Next button text on last question
+    document.getElementById('btn-next').innerText = (currentIdx === examSet.length - 1) ? "FINISH EXAM" : "NEXT QUESTION";
+}
+
+function navQ(dir) {
+    let nextIdx = currentIdx + dir;
+    if(nextIdx >= 0 && nextIdx < examSet.length) {
+        currentIdx = nextIdx;
+        loadQ();
+    } else if (nextIdx >= examSet.length) {
+        forceSubmit();
+    }
+}
+
+function startTimer(duration) {
+    let t = duration;
+    timer = setInterval(() => {
+        let m = Math.floor(t / 60), s = t % 60;
+        document.getElementById('timer').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+        if(t-- <= 0) { clearInterval(timer); forceSubmit(); }
+    }, 1000);
+}
+
+function forceSubmit() {
+    if(!confirm("Are you sure you want to end the exam?")) return;
+    clearInterval(timer);
+    
+    let score = 0;
+    examSet.forEach((q, i) => { if(answers[i] === q.c) score += 2; });
+
+    // Passing criteria 40%
+    const status = score >= 40 ? "PASS" : "FAIL";
+
+    const newLog = {
+        n: document.getElementById('stu-name').value,
+        r: document.getElementById('stu-roll').value,
+        s: score,
+        st: status
+    };
+    
+    const logs = JSON.parse(localStorage.getItem('examLogs')) || [];
+    logs.push(newLog);
+    localStorage.setItem('examLogs', JSON.stringify(logs));
+
+    alert(`EXAM FINISHED!\nScore: ${score}/100\nResult: ${status}`);
+    location.reload();
+}
+</script>
+</body>
+</html>
